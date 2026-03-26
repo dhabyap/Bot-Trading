@@ -21,51 +21,64 @@ class RunTradingBot extends Command
 
     public function handle(): int
     {
-        $timestamp = now()->format('Y-m-d H:i:s');
-        $this->info("[{$timestamp}] ▶ Bot Trading berjalan...");
-        Log::info("[RunTradingBot] Siklus dimulai pada {$timestamp}");
+        $once = $this->option('once');
+        $interval = (int) config('trading.check_interval', 60);
 
-        // Update Heartbeat untuk Dashboard (Cache 2 menit)
-        \Illuminate\Support\Facades\Cache::put('bot_last_run', now(), 120);
+        do {
+            $timestamp = now()->format('Y-m-d H:i:s');
+            $this->info("[{$timestamp}] ▶ Bot Trading berjalan...");
+            Log::info("[RunTradingBot] Siklus dimulai pada {$timestamp}");
 
-        try {
-            $this->exchange = new ExchangeService();
-            $this->telegram = new TelegramService();
-            $this->strategy = new TradingStrategy();
+            // Update Heartbeat untuk Dashboard (Cache 2 menit)
+            \Illuminate\Support\Facades\Cache::put('bot_last_run', now(), 120);
 
-            $symbol    = config('trading.trading_pair', 'BTC/USDT');
-            $timeframe = config('trading.ohlcv_timeframe', '1h');
-            $limit     = config('trading.ohlcv_limit', 100);
+            try {
+                $this->exchange = new ExchangeService();
+                $this->telegram = new TelegramService();
+                $this->strategy = new TradingStrategy();
 
-            // ── 1. AMBIL DATA OHLCV ──────────────────────────────
-            $this->info("  Mengambil data OHLCV {$symbol} ({$timeframe})...");
-            $ohlcv = $this->exchange->getOHLCV($symbol, $timeframe, $limit);
+                $symbol    = config('trading.trading_pair', 'BTC/USDT');
+                $timeframe = config('trading.ohlcv_timeframe', '1h');
+                $limit     = config('trading.ohlcv_limit', 100);
 
-            // ── 2. ANALISIS SINYAL ───────────────────────────────
-            $this->info("  Menganalisis sinyal...");
-            $result     = $this->strategy->analyze($ohlcv);
-            $signal     = $result['signal'];     // 'buy' | 'sell' | 'hold'
-            $reason     = $result['reason'];
-            $indicators = $result['indicators'];
+                // ── 1. AMBIL DATA OHLCV ──────────────────────────────
+                $this->info("  Mengambil data OHLCV {$symbol} ({$timeframe})...");
+                $ohlcv = $this->exchange->getOHLCV($symbol, $timeframe, $limit);
 
-            $this->info("  Sinyal: " . strtoupper($signal) . " | {$reason}");
-            Log::info("[RunTradingBot] Sinyal={$signal} | {$reason}");
+                // ── 2. ANALISIS SINYAL ───────────────────────────────
+                $this->info("  Menganalisis sinyal...");
+                $result     = $this->strategy->analyze($ohlcv);
+                $signal     = $result['signal'];     // 'buy' | 'sell' | 'hold'
+                $reason     = $result['reason'];
+                $indicators = $result['indicators'];
 
-            // ── 3. EKSEKUSI ORDER ────────────────────────────────
-            if ($signal === 'buy') {
-                $this->executeBuy($symbol, $indicators);
-            } elseif ($signal === 'sell') {
-                $this->executeSell($symbol, $indicators);
-            } else {
-                $this->info("  Tidak ada aksi. HOLD.");
+                $this->info("  Sinyal: " . strtoupper($signal) . " | {$reason}");
+                Log::info("[RunTradingBot] Sinyal={$signal} | {$reason}");
+
+                // ── 3. EKSEKUSI ORDER ────────────────────────────────
+                if ($signal === 'buy') {
+                    $this->executeBuy($symbol, $indicators);
+                } elseif ($signal === 'sell') {
+                    $this->executeSell($symbol, $indicators);
+                } else {
+                    $this->info("  Tidak ada aksi. HOLD.");
+                }
+
+            } catch (\Exception $e) {
+                $this->handleError('RunTradingBot', $e);
             }
 
-        } catch (\Exception $e) {
-            $this->handleError('RunTradingBot', $e);
-            return Command::FAILURE;
-        }
+            $this->info("[" . now()->format('H:i:s') . "] ✓ Siklus selesai.");
 
-        $this->info("[" . now()->format('H:i:s') . "] ✓ Siklus selesai.");
+            if ($once) {
+                break;
+            }
+
+            $this->info("  Menunggu {$interval} detik untuk siklus berikutnya...");
+            sleep($interval);
+
+        } while (!$once);
+
         return Command::SUCCESS;
     }
 

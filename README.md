@@ -7,6 +7,15 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Dokumentasi Proyek
+
+Seluruh panduan teknis telah dikonsolidasikan ke dalam folder `docs/`:
+
+1.  [**Setup dan Konfigurasi**](file:///d:/Latihan/Bot%20Trading/docs/1_Setup_dan_Konfigurasi.md): Instalasi, .env, dan koneksi Binance.
+2.  [**Strategi dan Logika Bot**](file:///d:/Latihan/Bot%20Trading/docs/2_Strategi_dan_Logika_Bot.md): Penjelasan RSI, EMA, dan alur kerja bot.
+3.  [**Notifikasi dan Otomatisasi**](file:///d:/Latihan/Bot%20Trading/docs/3_Notifikasi_dan_Otomatisasi.md): Telegram dan cara menjalankan bot 24/7.
+4.  [**Dashboard dan Monitoring**](file:///d:/Latihan/Bot%20Trading/docs/4_Dashboard_dan_Monitoring.md): Fitur dashboard, Kill Switch, dan metrik.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

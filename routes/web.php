@@ -26,6 +26,7 @@ Route::group(['prefix' => 'dashboard-api', 'middleware' => ['web']], function ()
     Route::get('/trades', [\App\Http\Controllers\DashboardController::class, 'apiTrades']);
     Route::get('/errors', [\App\Http\Controllers\DashboardController::class, 'apiErrors']);
     Route::post('/run-bot', [\App\Http\Controllers\DashboardController::class, 'runBot']);
+    Route::post('/kill-switch', [\App\Http\Controllers\DashboardController::class, 'killSwitch']);
     Route::get('/check-telegram', [\App\Http\Controllers\DashboardController::class, 'checkTelegram']);
     Route::post('/send-telegram', [\App\Http\Controllers\DashboardController::class, 'sendTelegram']);
 });

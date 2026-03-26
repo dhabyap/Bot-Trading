@@ -161,6 +161,19 @@ class ExchangeService
     }
 
     /**
+     * Batalkan semua order terbuka untuk simbol ini
+     */
+    public function cancelAllOrders(?string $symbol = null): array
+    {
+        try {
+            return $this->exchange->cancel_all_orders($symbol ?? $this->symbol);
+        } catch (\Exception $e) {
+            Log::error('[ExchangeService] Gagal batalkan semua order: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
      * Ambil daftar order terbuka
      */
     public function getOpenOrders(?string $symbol = null): array
@@ -189,6 +202,30 @@ class ExchangeService
             ];
         } catch (\Exception $e) {
             return ['min_cost' => 10, 'min_amount' => 0, 'precision' => 8];
+        }
+    }
+
+    /**
+     * Close All Positions (Market Sell seluruh saldo aset)
+     */
+    public function closeAllPositions(?string $symbol = null): array
+    {
+        try {
+            $symbol = $symbol ?? $this->symbol;
+            $asset  = explode('/', $symbol)[0];
+            
+            $balance = $this->getBalance();
+            $amount  = $balance[$asset] ?? 0;
+
+            if ($amount <= 0) {
+                return ['success' => true, 'message' => 'Tidak ada saldo untuk dijual', 'amount' => 0];
+            }
+
+            // Gunakan createSellOrder yang sudah ada (market order)
+            return $this->createSellOrder($amount, $symbol);
+        } catch (\Exception $e) {
+            Log::error('[ExchangeService] Gagal close all positions: ' . $e->getMessage());
+            throw $e;
         }
     }
 

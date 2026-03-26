@@ -70,6 +70,10 @@
         </div>
         
         <div class="flex items-center gap-4">
+            <div x-show="latency !== null" class="flex items-center gap-1 text-[10px] text-slate-500 font-mono">
+                <i class="fas fa-signal" :class="latency < 200 ? 'text-green-500' : 'text-yellow-500'"></i>
+                <span x-text="latency"></span>ms
+            </div>
             <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 text-xs border border-slate-700">
                 <span class="w-2 h-2 rounded-full bg-green-500 pulse"></span>
                 <span x-text="stats.bot_status.mode"></span>
@@ -85,26 +89,27 @@
     <main class="max-w-7xl mx-auto p-6 space-y-8">
         
         <!-- Top Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             
             <!-- Price Card -->
             <div class="glass-card p-6 rounded-2xl glow-green">
                 <div class="flex justify-between items-start mb-4">
-                    <span class="text-slate-400 text-sm font-medium">Price <span x-text="stats.ticker.symbol"></span></span>
-                    <span :class="stats.ticker.change >= 0 ? 'text-green-500' : 'text-red-500'" class="text-xs font-bold bg-opacity-10 px-2 py-1 rounded">
-                        <i :class="stats.ticker.change >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'" class="mr-1"></i>
-                        <span x-text="stats.ticker.change"></span>%
-                    </span>
+                    <span class="text-slate-400 text-sm font-medium">Estimated Balance</span>
+                    <i class="fas fa-coins text-yellow-500"></i>
                 </div>
-                <div class="text-3xl font-bold tracking-tight" x-text="formatCurrency(stats.ticker.last)"></div>
-                <div class="mt-2 text-xs text-slate-500 flex justify-between">
-                    <span>H: <span x-text="formatCurrency(stats.ticker.high)"></span></span>
-                    <span>L: <span x-text="formatCurrency(stats.ticker.low)"></span></span>
+                <div class="text-3xl font-bold tracking-tight text-white">
+                    <span x-text="stats.total_usdt"></span>
+                    <span class="text-lg font-normal text-slate-400">USDT</span>
+                </div>
+                <div class="mt-2 text-[10px] text-slate-500">
+                    Calculated from USDT + BTC value
                 </div>
             </div>
 
+            <!-- Price Card -->
+
             <!-- Bot Status Card -->
-            <div class="glass-card p-6 rounded-2xl">
+            <div class="glass-card p-6 rounded-2xl relative overflow-hidden">
                 <div class="flex justify-between items-start mb-4">
                     <span class="text-slate-400 text-sm font-medium">Bot Status</span>
                     <i class="fas fa-power-off" :class="stats.bot_status.active ? 'text-green-500' : 'text-red-500'"></i>
@@ -114,50 +119,73 @@
                         <span class="text-2xl font-bold tracking-tight" x-text="stats.bot_status.active ? 'ACTIVE' : 'STOPPED'"></span>
                         <span x-show="stats.bot_status.active" class="w-2 h-2 rounded-full bg-green-500 pulse"></span>
                     </div>
+                </div>
+                <div class="mt-4 flex gap-2">
                     <button @click="runBotManual()" :disabled="runningBot" 
-                            class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 rounded-lg text-[10px] font-bold transition-all flex items-center gap-2">
+                            class="flex-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2">
                         <i class="fas fa-play" :class="runningBot ? 'fa-spin fa-spinner' : ''"></i>
-                        RUN NOW
+                        RUN
+                    </button>
+                    <button @click="confirmKillSwitch()" :disabled="killing"
+                            class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 disabled:bg-slate-700 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-red-900/20">
+                        <i class="fas fa-skull-crossbones" :class="killing ? 'fa-spin' : ''"></i>
+                        KILL
                     </button>
                 </div>
-                <div class="mt-2 text-xs text-slate-500">
+                <div class="mt-3 text-[10px] text-slate-500">
                     Last run: <span x-text="stats.bot_status.last_run"></span>
                 </div>
             </div>
 
-            <!-- Telegram Connection -->
+            <!-- Active Strategy & Parameters -->
             <div class="glass-card p-6 rounded-2xl">
-                <div class="flex justify-between items-start mb-4">
-                    <span class="text-slate-400 text-sm font-medium">Telegram Connection</span>
-                    <i class="fab fa-telegram-plane" :class="telegramActive ? 'text-blue-400' : 'text-slate-500'"></i>
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-slate-400 text-sm font-medium">Active Strategy</span>
+                    <i class="fas fa-microchip text-indigo-400"></i>
                 </div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <span class="text-xl font-bold tracking-tight" :class="telegramActive ? 'text-blue-400' : 'text-slate-400'" 
-                              x-text="telegramActive ? 'CONNECTED' : 'CHECKING...'"></span>
-                        <span x-show="telegramActive" class="w-2 h-2 rounded-full bg-blue-400 pulse"></span>
+                <div class="text-lg font-bold text-indigo-300 truncate" x-text="stats.strategy.name"></div>
+                <div class="grid grid-cols-2 gap-2 mt-3">
+                    <div class="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                        <div class="text-[9px] text-slate-500 uppercase font-bold">Target TP</div>
+                        <div class="text-sm font-mono text-green-400" x-text="stats.strategy.tp + '%'"></div>
                     </div>
-                    <button @click="checkTelegramStatus()" :disabled="checkingTelegram"
-                            class="px-3 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-[10px] font-bold transition-all">
-                        <i class="fas fa-sync-alt" :class="checkingTelegram ? 'fa-spin' : ''"></i>
-                    </button>
+                    <div class="bg-slate-800/50 p-2 rounded-lg border border-slate-700/50">
+                        <div class="text-[9px] text-slate-500 uppercase font-bold">Stop Loss</div>
+                        <div class="text-sm font-mono text-red-400" x-text="stats.strategy.sl + '%'"></div>
+                    </div>
                 </div>
-                <div class="mt-2 text-[10px]" :class="telegramActive ? 'text-green-500' : 'text-red-400'" x-text="telegramMessage"></div>
             </div>
 
-            <!-- P&L Today -->
-            <div class="glass-card p-6 rounded-2xl" :class="stats.today_pnl >= 0 ? 'glow-green' : 'glow-red'">
-                <div class="flex justify-between items-start mb-4">
-                    <span class="text-slate-400 text-sm font-medium">Daily profit/loss</span>
-                    <i class="fas fa-chart-line text-slate-500"></i>
+            <!-- Performance Metrics -->
+            <div class="glass-card p-6 rounded-2xl" :class="stats.performance.total_pnl >= 0 ? 'glow-green' : 'glow-red'">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-slate-400 text-sm font-medium">Performance Metrics</span>
+                    <i class="fas fa-chart-bar text-slate-500"></i>
                 </div>
-                <div class="text-3xl font-bold tracking-tight" :class="stats.today_pnl >= 0 ? 'text-green-500' : 'text-red-500'">
-                    <span x-text="stats.today_pnl >= 0 ? '+' : ''"></span>
-                    <span x-text="stats.today_pnl"></span>
-                    <span class="text-lg">USDT</span>
-                </div>
-                <div class="mt-2 text-xs text-slate-500">
-                    Realized P&L from closed trades
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2">
+                    <div class="col-span-2">
+                        <div class="text-[10px] text-slate-500 uppercase">Daily P&L</div>
+                        <div class="text-2xl font-bold tracking-tight" :class="stats.performance.daily_pnl >= 0 ? 'text-green-500' : 'text-red-500'">
+                            <span x-text="stats.performance.daily_pnl >= 0 ? '+' : ''"></span>
+                            <span x-text="stats.performance.daily_pnl"></span><span class="text-xs ml-1">USDT</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-[9px] text-slate-500 uppercase">Win Rate</div>
+                        <div class="text-lg font-bold text-slate-200" x-text="stats.performance.win_rate + '%'"></div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[9px] text-slate-500 uppercase">Total P&L</div>
+                        <div class="text-lg font-bold" :class="stats.performance.total_pnl >= 0 ? 'text-green-500' : 'text-red-500'">
+                            <span x-text="stats.performance.total_pnl >= 0 ? '+' : ''"></span><span x-text="stats.performance.total_pnl"></span>
+                        </div>
+                    </div>
+                    <div class="col-span-2 pt-1 border-t border-slate-700/50">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[9px] text-slate-500 uppercase">Max Drawdown</span>
+                            <span class="text-[11px] font-bold text-red-400" x-text="'-' + stats.performance.max_drawdown + '%'"></span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -247,6 +275,33 @@
                     </div>
                 </div>
 
+                <!-- Pending Orders -->
+                <div class="glass-card rounded-2xl p-6 border-l-2 border-indigo-500">
+                    <h3 class="font-bold mb-4 flex items-center"><i class="fas fa-clock mr-2 text-indigo-400"></i>Pending Orders</h3>
+                    <div class="space-y-3 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                        <template x-if="stats.pending_orders.length === 0">
+                            <div class="text-xs text-slate-500 text-center py-4">No pending orders</div>
+                        </template>
+                        <template x-for="order in stats.pending_orders" :key="order.id">
+                            <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700/50 relative overflow-hidden">
+                                <div class="flex justify-between items-start mb-1">
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase" 
+                                          :class="order.side === 'buy' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'" 
+                                          x-text="order.side + ' ' + order.type"></span>
+                                    <span class="text-[10px] text-slate-500" x-text="formatDateShort(order.datetime)"></span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold text-slate-200" x-text="order.symbol"></span>
+                                    <span class="text-xs font-mono text-indigo-400" x-text="order.amount + ' @ ' + order.price"></span>
+                                </div>
+                                <div class="mt-2 h-1 w-full bg-slate-700 rounded-full overflow-hidden">
+                                    <div class="h-full bg-indigo-500" :style="'width: ' + (order.filled / order.amount * 100) + '%'"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
                 <!-- Error Logs -->
                 <div class="glass-card rounded-2xl p-6 border-t-2 border-red-500/30">
                     <h3 class="font-bold mb-4 flex items-center text-red-400"><i class="fas fa-exclamation-triangle mr-2"></i>Recent Errors</h3>
@@ -271,14 +326,19 @@
             return {
                 loading: false,
                 runningBot: false,
+                killing: false,
                 checkingTelegram: false,
                 telegramActive: false,
+                latency: null,
                 telegramMessage: 'Memeriksa koneksi...',
                 stats: {
                     ticker: { symbol: 'BTC/USDT', last: 0, change: 0, high: 0, low: 0, volume: 0 },
                     balance: {},
-                    today_pnl: 0,
+                    total_usdt: 0,
+                    performance: { daily_pnl: 0, total_pnl: 0, win_rate: 0, max_drawdown: 0 },
                     open_position: null,
+                    pending_orders: [],
+                    strategy: { name: '...', tp: 0, sl: 0 },
                     bot_status: { active: false, last_run: '...', mode: '...' }
                 },
                 trades: [],
@@ -292,9 +352,9 @@
                 },
 
                 async fetchData(manual = false) {
+                    const startTime = Date.now();
                     this.loading = true;
                     try {
-                        // Parallel fetch for speed
                         const [statsRes, tradesRes, errorsRes] = await Promise.all([
                             fetch('/dashboard-api/stats'),
                             fetch('/dashboard-api/trades'),
@@ -305,7 +365,10 @@
                         const tData = await tradesRes.json();
                         const eData = await errorsRes.json();
 
-                        if (sData.success) this.stats = sData.data;
+                        if (sData.success) {
+                            this.stats = sData.data;
+                            this.latency = sData.data.binance_latency;
+                        }
                         if (tData.success) this.trades = tData.data;
                         if (eData.success) this.errors = eData.data;
 
@@ -334,6 +397,32 @@
                         alert('Gagal menjalankan bot secara manual');
                     } finally {
                         this.runningBot = false;
+                    }
+                },
+
+                confirmKillSwitch() {
+                    if (confirm('⚠️ PERINGATAN: Tombol ini akan menghentikan bot, membatalkan semua order, dan menjual seluruh posisi aktif ke USDT. Anda yakin?')) {
+                        this.killSwitch();
+                    }
+                },
+
+                async killSwitch() {
+                    this.killing = true;
+                    try {
+                        const res = await fetch('/dashboard-api/kill-switch', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json'
+                            }
+                        });
+                        const data = await res.json();
+                        alert(data.message);
+                        await this.fetchData();
+                    } catch (err) {
+                        alert('Gagal mengeksekusi Kill Switch');
+                    } finally {
+                        this.killing = false;
                     }
                 },
 
