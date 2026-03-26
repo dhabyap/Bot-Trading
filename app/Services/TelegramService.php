@@ -14,7 +14,7 @@ class TelegramService
 
     public function __construct()
     {
-        $this->token  = config('telegram.bot_token', '');
+        $this->token = config('telegram.bot_token', '');
         $this->chatId = config('telegram.chat_id', '');
         $this->apiUrl = config('telegram.api_url', 'https://api.telegram.org/bot');
     }
@@ -33,8 +33,8 @@ class TelegramService
 
         try {
             $response = Http::timeout(10)->post("{$this->apiUrl}{$this->token}/sendMessage", [
-                'chat_id'    => $targetChatId,
-                'text'       => $message,
+                'chat_id' => $targetChatId,
+                'text' => $message,
                 'parse_mode' => 'HTML',
             ]);
 
@@ -46,7 +46,8 @@ class TelegramService
             Log::warning('[TelegramService] Gagal kirim: ' . $response->body());
             return false;
 
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('[TelegramService] Exception: ' . $e->getMessage());
             return false;
         }
@@ -80,8 +81,8 @@ class TelegramService
         $plText = '';
         if ($profitLoss !== null) {
             $plEmoji = $profitLoss >= 0 ? '📈' : '📉';
-            $plSign  = $profitLoss >= 0 ? '+' : '';
-            $plText  = "\n{$plEmoji} P&L       : <b>{$plSign}" . number_format($profitLoss, 2) . " USDT</b>";
+            $plSign = $profitLoss >= 0 ? '+' : '';
+            $plText = "\n{$plEmoji} P&L       : <b>{$plSign}" . number_format($profitLoss, 2) . " USDT</b>";
         }
 
         $message = implode("\n", [
@@ -104,12 +105,12 @@ class TelegramService
      */
     public function notifyError(string $source, string $errorMessage, string $severity = 'error'): bool
     {
-        $emoji = match($severity) {
-            'critical' => '🆘',
-            'error'    => '❌',
-            'warning'  => '⚠️',
-            default    => 'ℹ️',
-        };
+        $emoji = match ($severity) {
+                'critical' => '🆘',
+                'error' => '❌',
+                'warning' => '⚠️',
+                default => 'ℹ️',
+            };
 
         $message = implode("\n", [
             "{$emoji} <b>BOT ERROR — " . strtoupper($severity) . "</b>",
@@ -149,7 +150,7 @@ class TelegramService
     public function notifyDailySummary(int $totalBuy, int $totalSell, float $totalPL, float $currentBalance): bool
     {
         $plEmoji = $totalPL >= 0 ? '📈' : '📉';
-        $plSign  = $totalPL >= 0 ? '+' : '';
+        $plSign = $totalPL >= 0 ? '+' : '';
 
         $message = implode("\n", [
             "📊 <b>RINGKASAN HARIAN BOT TRADING</b>",
@@ -169,7 +170,7 @@ class TelegramService
      */
     public function testConnection(): bool
     {
-        $message = "✅ <b>Test Koneksi Berhasil!</b>\n\nBot Trading Laravel berhasil terhubung ke Telegram.\n⏰ " . now()->format('Y-m-d H:i:s');
+        $message = "✅ <b>Test Koneksi Berhasil!</b>\n\nBot Trading berhasil terhubung ke Telegram.\n⏰ " . now()->format('Y-m-d H:i:s');
         return $this->send($message);
     }
 }
