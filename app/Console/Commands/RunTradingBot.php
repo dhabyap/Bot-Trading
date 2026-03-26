@@ -25,6 +25,9 @@ class RunTradingBot extends Command
         $this->info("[{$timestamp}] ▶ Bot Trading berjalan...");
         Log::info("[RunTradingBot] Siklus dimulai pada {$timestamp}");
 
+        // Update Heartbeat untuk Dashboard (Cache 2 menit)
+        \Illuminate\Support\Facades\Cache::put('bot_last_run', now(), 120);
+
         try {
             $this->exchange = new ExchangeService();
             $this->telegram = new TelegramService();
